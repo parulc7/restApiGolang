@@ -1,10 +1,12 @@
 package main
 
 import (
-	"time"
+	"context"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"time"
 
 	"github.com/parulc7/CoffeeShopAPI/handlers"
 )
@@ -19,15 +21,29 @@ func main() {
 	sm := http.NewServeMux()
 
 	// Server Config here
-	s:= &http.Server{
-		Addr:"",
-		Handler:sm,
-		IdleTimeout:120*time.Second,
-		ReadTimeout:1*time.Second,
-		WriteTimeout:1*time.Second
+	s := &http.Server{
+		Addr:         ":8080",
+		Handler:      sm,
+		IdleTimeout:  120 * time.Second,
+		ReadTimeout:  1 * time.Second,
+		WriteTimeout: 1 * time.Second,
 	}
 	// Map the routes in servemux and start server
 	sm.Handle("/", hh)
 	sm.Handle("/goodbye", gh)
-	s.ListenAndServe(":8080", sm)
+
+	// Graceful Exit - shutdown
+	sigChan := make(chan os.Signal)
+
+	// Notify the channel when an interrupt or a kill signal is encountered
+	signal.Notify(sigChan, os.Kill)
+	signal.Notify(sigChan, os.Interrupt)
+
+	// Extract the value of the channel (Blocking Operation)
+	sig := <-sigChan
+	l.Println("Received a termination request :: ", sig)
+
+	// Get Context(Timeout Method) and shutdown
+	c, _ := context.WithTimeout(context.TODO(), 30*time.Second)
+	s.Shutdown(c)
 }
