@@ -28,6 +28,15 @@ func main() {
 		ReadTimeout:  1 * time.Second,
 		WriteTimeout: 1 * time.Second,
 	}
+	
+	// Concurrent Serving while waiting for a kill signal
+	go func(){
+		err := s.ListenAndServe()
+		if(err!=nil){
+			l.Fatal(err)
+		}
+	}();
+	
 	// Map the routes in servemux and start server
 	sm.Handle("/", hh)
 	sm.Handle("/goodbye", gh)
